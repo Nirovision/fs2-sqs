@@ -6,15 +6,9 @@ import java.util.concurrent.Future
 import com.amazonaws.AmazonWebServiceRequest
 import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.handlers.AsyncHandler
-import com.amazonaws.services.sqs.AmazonSQSAsyncClient
-import com.amazonaws.services.sqs.AmazonSQSAsyncClient
-import com.amazonaws.services.sqs.AmazonSQSClient
-import com.amazonaws.services.sqs.model.SendMessageBatchRequest
-import com.amazonaws.services.sqs.model.SendMessageBatchResult
-import com.amazonaws.services.sqs.model.SendMessageRequest
-import com.amazonaws.services.sqs.model.SendMessageResult
+import com.amazonaws.services.sqs._
+import com.amazonaws.services.sqs.model._
 
-import scala.collection.JavaConverters._
 import scalaz._
 import Scalaz._
 import fs2._
@@ -56,9 +50,6 @@ object SQSExample {
     override def onSuccess(request: E, result: A): Unit = k(Right(result))
   }
 
-//  private def convertSendMessageBatchResultToIndividual(r: SendMessageBatchResult): List[SendMessageResult] = {
-//    r.get
-//  }
 
   def loggingSink[A]: Sink[Task, A] = { s =>
     s.map { i =>
@@ -69,23 +60,24 @@ object SQSExample {
 
   def main(args: Array[String]): Unit = {
 
-    implicit val strategy = Strategy.fromExecutor(Executors.newFixedThreadPool(4))
+    val tp = Executors.newFixedThreadPool(4)
+    implicit val strategy = Strategy.fromExecutor(tp)
 
     val credentials = new BasicAWSCredentials(sys.env("II_STAGING_AWS_ACCESS_KEY"), sys.env("II_STAGING_AWS_SECRET_KEY"))
     val sqs = new AmazonSQSAsyncClient(credentials)
 
-    val messages = Stream.emits[Task, SendMessageRequest]((0 until 10000).map(x => new SendMessageRequest("https://sqs.ap-southeast-2.amazonaws.com/862341389713/example", "DOM")))
+    val messages = Stream.emits[Task, SendMessageRequest]((0 until 10).map(x => new SendMessageRequest("https://sqs.ap-southeast-2.amazonaws.com/862341389713/example", "DOM")))
 
     val publisher = publishPipe(sqs)
 
-    val eff = messages.through(publisher).to(loggingSink)
+    val eff = messages
+      .through(publisher).to(loggingSink)
+      .onError(e => Stream.emit(println("Error: " + e.getMessage)))
 
     val start = Instant.now
-
     eff.run.unsafeRun()
-
     println("Took: " + (Instant.now.getMillis - start.getMillis))
-
+    tp.shutdown()
   }
 
 }
