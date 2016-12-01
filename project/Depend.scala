@@ -13,13 +13,17 @@ object Depend {
     "co.fs2" %% "fs2-core" % "0.9.2"
   )
 
-  lazy val argonaut = Seq("io.argonaut" %% "argonaut" % "6.1")
+  lazy val awsSqs = Seq(
+    "com.amazonaws" % "aws-java-sdk-sqs" % "1.11.33"
+  )
+
+  lazy val argonaut = Seq(
+    "io.argonaut" %% "argonaut" % "6.1"
+  )
 
   lazy val scalaTestCheck = Seq(
     "org.scalatest"   %% "scalatest"                 % "2.2.4",
-    "org.scalacheck"  %% "scalacheck"                % "1.12.2",
-    "org.scalaz"      %% "scalaz-scalacheck-binding" % scalazVersion,
-    "org.typelevel"   %% "scalaz-scalatest"          % "1.1.0"
+    "org.scalacheck"  %% "scalacheck"                % "1.12.2"
   ).map(_.withSources).map(_ % "test")
 
   lazy val depResolvers = Seq(
@@ -30,6 +34,7 @@ object Depend {
   lazy val dependencies = 
     scalaz ++
     fs2 ++
+    awsSqs ++
     argonaut ++
     scalaTestCheck
 }
