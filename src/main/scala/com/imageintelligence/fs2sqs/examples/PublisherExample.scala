@@ -1,21 +1,13 @@
 package com.imageintelligence.fs2sqs.examples
 
-import java.io.Serializable
-
 import com.amazonaws.services.sqs.AmazonSQSAsyncClient
-import fs2.Strategy
 import com.amazonaws.services.sqs.model._
 import fs2.Stream
-import fs2.Task
-import org.joda.time.Instant
 import java.util.concurrent.Executors
 
 import com.amazonaws.auth.BasicAWSCredentials
 import com.imageintelligence.fs2sqs.FS2SQS
-import fs2.Pipe
-import fs2.Sink
-
-import scala.util.Random
+import fs2._
 
 object PublisherExample {
 

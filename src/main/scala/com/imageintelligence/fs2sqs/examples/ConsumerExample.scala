@@ -8,10 +8,7 @@ import java.util.concurrent.Executors
 import com.amazonaws.auth.BasicAWSCredentials
 import com.imageintelligence.fs2sqs.FS2SQS
 import com.imageintelligence.fs2sqs.FS2SQS.MessageAction
-import fs2.Pipe
-import fs2.Sink
-import fs2.Stream
-import fs2.Task
+import fs2._
 
 object ConsumerExample {
   def main(args: Array[String]): Unit = {
