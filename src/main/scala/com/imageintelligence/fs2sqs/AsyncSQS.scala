@@ -33,6 +33,12 @@ object AsyncSQS {
     }
   }
 
+  def deleteMessageBatchAsync(client: AmazonSQSAsyncClient, request: DeleteMessageBatchRequest)(implicit s: Strategy): Task[DeleteMessageBatchResult] = {
+    Task.async[DeleteMessageBatchResult] { k =>
+      client.deleteMessageBatchAsync(request)
+    }
+  }
+
   private def handler[E <: AmazonWebServiceRequest, A](k: (Either[Throwable, A]) => Unit) = new AsyncHandler[E, A] {
     override def onError(exception: Exception): Unit = k(Left(exception))
 

@@ -47,5 +47,6 @@ object ConsumerExample {
 
     // Lift our effect into a Task, and run it.
     effect.run.unsafeRun()
+    tp.shutdown()
   }
 }

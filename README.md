@@ -6,11 +6,16 @@
 [SQS](https://aws.amazon.com/sqs/) using [FS2](https://github.com/functional-streams-for-scala/fs2).
 
 
-## Overview:
+## Overview
 
 - Lightweight wrapper over the raw [Java AWS SDK](https://aws.amazon.com/sdk-for-java/). Doesn't wrap the types, so you
 gain the full power of the AWS SDK and aren't forced around a leaky abstraction.
 - Unopinionated primitive building blocks.
+
+## Goals
+
+- Automatic, hands off ability to perform batching of messages to reduce costs
+- Dead lettering of failed messages
 
 ## Quick examples
 

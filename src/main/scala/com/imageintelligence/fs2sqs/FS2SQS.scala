@@ -1,9 +1,13 @@
 package com.imageintelligence.fs2sqs
 
+import java.util.UUID
+
 import scala.collection.JavaConverters._
 import com.amazonaws.services.sqs._
 import com.amazonaws.services.sqs.model._
 import fs2._
+
+import scala.collection.immutable.Seq
 
 object FS2SQS {
 
@@ -33,5 +37,46 @@ object FS2SQS {
       case Right(deleteMessageRequest) => AsyncSQS.deleteMessageAsync(client, deleteMessageRequest)
       case Left(sendMessageRequest)   => AsyncSQS.sendMessageAsync(client, sendMessageRequest)
     }.map(_ => ())
+  }
+
+  def batchAckSink(client: AmazonSQSAsyncClient, maxBatchSize: Int)(implicit s: Strategy): Sink[Task, (Message, (Message => MessageAction))] = { mes =>
+    val actions = mes.map {
+      case (message, action) => action(message)
+    }
+
+    val deleteBatch = actions.collect {
+      case Right(d) => d
+    }.chunkN(maxBatchSize, true)
+      .map(x => x.toList.map(_.head))
+      .flatMap { items =>
+        val requests = items
+          .groupBy(x => x.getQueueUrl)
+          .map { case (queueUrl, requests) =>
+            val entries = requests.map(p => new DeleteMessageBatchRequestEntry(UUID.randomUUID().toString, p.getReceiptHandle)).asJava
+            new DeleteMessageBatchRequest(queueUrl, entries)
+          }
+        Stream.emits(requests.toList)
+      }.evalMap { deleteMessageRequest =>
+        AsyncSQS.deleteMessageBatchAsync(client, deleteMessageRequest)
+      }
+
+    val sendsBatch = actions.collect {
+      case Left(d) => d
+    }.chunkN(maxBatchSize, true)
+      .map(x => x.toList.map(_.head))
+      .flatMap { items =>
+        val requests = items
+          .groupBy(x => x.getQueueUrl)
+          .map { case (queueUrl, requests) =>
+            val entries = requests.map(p => new SendMessageBatchRequestEntry(UUID.randomUUID().toString, p.getMessageBody)).asJava
+            new SendMessageBatchRequest(queueUrl, entries)
+          }
+        Stream.emits(requests.toList)
+      }.evalMap { sendMessageRequest =>
+        AsyncSQS.sendMessageBatchAsync(client, sendMessageRequest)
+      }
+
+
+    deleteBatch.merge(sendsBatch).map(_ => ())
   }
 }
