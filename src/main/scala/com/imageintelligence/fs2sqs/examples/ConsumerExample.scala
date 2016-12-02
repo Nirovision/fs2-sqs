@@ -17,9 +17,9 @@ object ConsumerExample {
   def main(args: Array[String]): Unit = {
     val tp = Executors.newFixedThreadPool(4)
     implicit val strategy = Strategy.fromExecutor(tp)
-    val credentials = new BasicAWSCredentials(sys.env("II_STAGING_AWS_ACCESS_KEY"), sys.env("II_STAGING_AWS_SECRET_KEY"))
+    val credentials = new BasicAWSCredentials(sys.env("AWS_ACCESS_KEY"), sys.env("AWS_SECRET_KEY"))
     val client = new AmazonSQSAsyncClient(credentials)
-    val queueUrl = "https://sqs.ap-southeast-2.amazonaws.com/862341389713/example"
+    val queueUrl = "https://sqs.ap-southeast-2.amazonaws.com/1234/example"
 
     // Construct a request to get messages from SQS
     val messageRequest = new ReceiveMessageRequest(queueUrl)
