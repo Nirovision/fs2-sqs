@@ -16,18 +16,18 @@ object ConsumerExample {
     implicit val strategy = Strategy.fromExecutor(tp)
     val credentials = new BasicAWSCredentials(sys.env("AWS_ACCESS_KEY"), sys.env("AWS_SECRET_KEY"))
     val client = new AmazonSQSAsyncClient(credentials)
-    val queueUrl = "https://sqs.ap-southeast-2.amazonaws.com/1234/example"
+    val queueUrl = "https://sqs.ap-southeast-2.amazonaws.com/862341389713/example"
 
     // Construct a request to get messages from SQS
     val messageRequest = new ReceiveMessageRequest(queueUrl)
-      .withMaxNumberOfMessages(1)
+      .withMaxNumberOfMessages(10)
       .withWaitTimeSeconds(10)
 
     // Construct an infinite stream of Messages from SQS
     val messagesStream: Stream[Task, Message] = FS2SQS.messageStream(client, messageRequest)
 
     // A sink that can acknowledge Messages using a MessageAction
-    val ackSink: Sink[Task, (Message, (Message) => MessageAction)] = FS2SQS.ackSink(client)
+    val ackSink: Sink[Task, (Message, (Message) => MessageAction)] = FS2SQS.batchAckSink(client, 10)
 
     // A pipe that either deletes or requeues the message
     val workPipe: Pipe[Task, Message, (Message, (Message) => MessageAction)] = { messages =>
