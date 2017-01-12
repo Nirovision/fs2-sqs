@@ -1,8 +1,6 @@
 import sbt._
 
 object Depend {
-  lazy val scalazVersion = "7.1.7"
-
   lazy val fs2 = Seq(
     "co.fs2" %% "fs2-core" % "0.9.2"
   )
@@ -13,7 +11,7 @@ object Depend {
 
   lazy val scalaTestCheck = Seq(
     "org.scalatest"   %% "scalatest"                 % "2.2.4",
-    "org.scalacheck"  %% "scalacheck"                % "1.12.2"
+    "org.scalacheck"  %% "scalacheck"                % "1.13.4"
   ).map(_.withSources).map(_ % "test")
 
   lazy val depResolvers = Seq(
