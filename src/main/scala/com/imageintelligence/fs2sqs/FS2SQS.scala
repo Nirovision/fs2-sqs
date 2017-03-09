@@ -8,7 +8,6 @@ import com.amazonaws.services.sqs.model._
 import fs2._
 
 sealed trait FS2SQSRequest
-
 case class FS2DeleteMsgRequest(req: DeleteMessageRequest) extends FS2SQSRequest
 case class FS2SendMsgRequest(req: SendMessageRequest) extends FS2SQSRequest
 case class FS2ChangeMsgVisibilityRequest(req: ChangeMessageVisibilityRequest) extends FS2SQSRequest
