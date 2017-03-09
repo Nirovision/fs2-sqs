@@ -6,8 +6,7 @@ import com.amazonaws.services.sqs.model._
 import java.util.concurrent.Executors
 
 import com.amazonaws.auth.BasicAWSCredentials
-import com.imageintelligence.fs2sqs.FS2SQS
-import com.imageintelligence.fs2sqs.FS2SQS.MessageAction
+import com.imageintelligence.fs2sqs.{FS2DeleteMsgRequest, FS2SQS, FS2SQSRequest, FS2SendMsgRequest}
 import fs2._
 
 object ConsumerExample {
@@ -27,15 +26,15 @@ object ConsumerExample {
     val messagesStream: Stream[Task, Message] = FS2SQS.messageStream(client, messageRequest)
 
     // A sink that can acknowledge Messages using a MessageAction
-    val ackSink: Sink[Task, (Message, (Message) => MessageAction)] = FS2SQS.batchAckSink(client, 10)
+    val ackSink: Sink[Task, (Message, (Message) => FS2SQSRequest)] = FS2SQS.batchAckSink(client, 10)
 
     // A pipe that either deletes or requeues the message
-    val workPipe: Pipe[Task, Message, (Message, (Message) => MessageAction)] = { messages =>
+    val workPipe: Pipe[Task, Message, (Message, (Message) => FS2SQSRequest)] = { messages =>
       messages.map { message =>
         if (message.getBody == "DOM") {
-          (message, (m: Message) => Right(new DeleteMessageRequest(queueUrl, m.getReceiptHandle)))
+          (message, (m: Message) => FS2DeleteMsgRequest(new DeleteMessageRequest(queueUrl, m.getReceiptHandle)))
         } else {
-          (message, (m: Message) => Left(new SendMessageRequest(queueUrl, m.getBody)))
+          (message, (m: Message) => FS2SendMsgRequest(new SendMessageRequest(queueUrl, m.getBody)))
         }
       }
     }

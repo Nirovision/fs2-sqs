@@ -39,6 +39,18 @@ object AsyncSQS {
     }
   }
 
+  def changeMessageVisibilityAsync(client: AmazonSQSAsyncClient, request: ChangeMessageVisibilityRequest)(implicit s: Strategy): Task[ChangeMessageVisibilityRequest] = {
+    Task.async[ChangeMessageVisibilityRequest] { k =>
+      client.changeMessageVisibilityAsync(request)
+    }
+  }
+
+  def changeMessageVisibilityBatchAsync(client: AmazonSQSAsyncClient, request: ChangeMessageVisibilityBatchRequest)(implicit s: Strategy): Task[ChangeMessageVisibilityBatchRequest] = {
+    Task.async[ChangeMessageVisibilityBatchRequest] { k =>
+      client.changeMessageVisibilityBatchAsync(request)
+    }
+  }
+
   private def handler[E <: AmazonWebServiceRequest, A](k: (Either[Throwable, A]) => Unit) = new AsyncHandler[E, A] {
     override def onError(exception: Exception): Unit = k(Left(exception))
 
