@@ -35,7 +35,19 @@ object AsyncSQS {
 
   def deleteMessageBatchAsync(client: AmazonSQSAsyncClient, request: DeleteMessageBatchRequest)(implicit s: Strategy): Task[DeleteMessageBatchResult] = {
     Task.async[DeleteMessageBatchResult] { k =>
-      client.deleteMessageBatchAsync(request)
+      client.deleteMessageBatchAsync(request, handler[DeleteMessageBatchRequest, DeleteMessageBatchResult](k))
+    }
+  }
+
+  def changeMessageVisibilityAsync(client: AmazonSQSAsyncClient, request: ChangeMessageVisibilityRequest)(implicit s: Strategy): Task[ChangeMessageVisibilityResult] = {
+    Task.async[ChangeMessageVisibilityResult] { k =>
+      client.changeMessageVisibilityAsync(request, handler[ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult](k))
+    }
+  }
+
+  def changeMessageVisibilityBatchAsync(client: AmazonSQSAsyncClient, request: ChangeMessageVisibilityBatchRequest)(implicit s: Strategy): Task[ChangeMessageVisibilityBatchResult] = {
+    Task.async[ChangeMessageVisibilityBatchResult] { k =>
+      client.changeMessageVisibilityBatchAsync(request, handler[ChangeMessageVisibilityBatchRequest, ChangeMessageVisibilityBatchResult](k))
     }
   }
 
