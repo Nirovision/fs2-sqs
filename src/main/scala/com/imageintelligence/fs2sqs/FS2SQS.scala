@@ -2,10 +2,15 @@ package com.imageintelligence.fs2sqs
 
 import java.util.UUID
 
+import cats.effect.Effect
+import cats.implicits._
+
 import scala.collection.JavaConverters._
 import com.amazonaws.services.sqs._
 import com.amazonaws.services.sqs.model._
 import fs2._
+
+import scala.concurrent.ExecutionContext
 
 sealed trait FS2SQSRequest
 case class FS2DeleteMsgRequest(req: DeleteMessageRequest) extends FS2SQSRequest
@@ -14,42 +19,42 @@ case class FS2ChangeMsgVisibilityRequest(req: ChangeMessageVisibilityRequest) ex
 
 object FS2SQS {
 
-  def publishPipe(client: AmazonSQSAsyncClient)(implicit s: Strategy): Pipe[Task, SendMessageRequest, SendMessageResult] = { requests =>
+  def publishPipe[F[_]: Effect](client: AmazonSQSAsyncClient)(implicit ec: ExecutionContext): Pipe[F, SendMessageRequest, SendMessageResult] = { requests =>
     requests.evalMap { request =>
       AsyncSQS.sendMessageAsync(client, request)
     }
   }
 
-  def publishBatchPipe(client: AmazonSQSAsyncClient)(implicit s: Strategy): Pipe[Task, SendMessageBatchRequest, SendMessageBatchResult] = { requests =>
+  def publishBatchPipe[F[_]: Effect](client: AmazonSQSAsyncClient)(implicit ec: ExecutionContext): Pipe[F, SendMessageBatchRequest, SendMessageBatchResult] = { requests =>
     requests.evalMap { request =>
       AsyncSQS.sendMessageBatchAsync(client, request)
     }
   }
 
-  def messageStream(client: AmazonSQSAsyncClient, request: ReceiveMessageRequest)(implicit s: Strategy): Stream[Task, Message] = {
+  def messageStream[F[_]: Effect](client: AmazonSQSAsyncClient, request: ReceiveMessageRequest)(implicit ec: ExecutionContext): Stream[F, Message] = {
     Stream.repeatEval(AsyncSQS.getMessagesAsync(client, request))
       .flatMap(result => Stream.emits(result.getMessages.asScala))
   }
 
-  def ackSink(client: AmazonSQSAsyncClient)(implicit s: Strategy): Sink[Task, (Message, (Message => FS2SQSRequest))] = { mes =>
+  def ackSink[F[_]: Effect](client: AmazonSQSAsyncClient)(implicit ec: ExecutionContext): Sink[F, (Message, (Message => FS2SQSRequest))] = { mes =>
     mes.map {
       case (message, action) => action(message)
     }.evalMap {
-      case FS2DeleteMsgRequest(req) => AsyncSQS.deleteMessageAsync(client, req)
-      case FS2SendMsgRequest(req) => AsyncSQS.sendMessageAsync(client, req)
-      case FS2ChangeMsgVisibilityRequest(req) => AsyncSQS.changeMessageVisibilityAsync(client, req)
-    }.map(_ => ())
+      case FS2DeleteMsgRequest(req) => AsyncSQS.deleteMessageAsync[F](client, req).void
+      case FS2SendMsgRequest(req) => AsyncSQS.sendMessageAsync[F](client, req).void
+      case FS2ChangeMsgVisibilityRequest(req) => AsyncSQS.changeMessageVisibilityAsync[F](client, req).void
+    }
   }
 
-  def batchAckSink(client: AmazonSQSAsyncClient, maxBatchSize: Int)(implicit s: Strategy): Sink[Task, (Message, (Message => FS2SQSRequest))] = { mes =>
+  def batchAckSink[F[_]: Effect](client: AmazonSQSAsyncClient, maxBatchSize: Int)(implicit ec: ExecutionContext): Sink[F, (Message, (Message => FS2SQSRequest))] = { mes =>
     val actions = mes.map {
       case (message, action) => action(message)
     }
 
     val deleteBatch = actions.collect {
       case FS2DeleteMsgRequest(d) => d
-    }.chunkN(maxBatchSize, allowFewer = true)
-      .map(x => x.toList.map(_.head))
+    }.segmentN(maxBatchSize, allowFewer = true)
+      .map(x => x.toList)
       .flatMap { items =>
         val requests = items
           .groupBy(x => x.getQueueUrl)
@@ -64,8 +69,8 @@ object FS2SQS {
 
     val sendsBatch = actions.collect {
       case FS2SendMsgRequest(d) => d
-    }.chunkN(maxBatchSize, allowFewer = true)
-      .map(x => x.toList.map(_.head))
+    }.segmentN(maxBatchSize, allowFewer = true)
+      .map(x => x.toList)
       .flatMap { items =>
         val requests = items
           .groupBy(x => x.getQueueUrl)
@@ -80,8 +85,8 @@ object FS2SQS {
 
     val changeVisibilityBatch = actions.collect {
       case FS2ChangeMsgVisibilityRequest(d) => d
-    }.chunkN(maxBatchSize, allowFewer = true)
-      .map(x => x.toList.map(_.head))
+    }.segmentN(maxBatchSize, allowFewer = true)
+      .map(x => x.toList)
       .flatMap { items =>
         val requests = items
           .groupBy(x => x.getQueueUrl)

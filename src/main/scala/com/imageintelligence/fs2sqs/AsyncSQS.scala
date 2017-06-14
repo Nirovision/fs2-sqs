@@ -1,54 +1,57 @@
 package com.imageintelligence.fs2sqs
 
+import cats.effect.Effect
 import com.amazonaws.AmazonWebServiceRequest
 import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.sqs.AmazonSQSAsyncClient
 import com.amazonaws.services.sqs.model._
-import fs2.Strategy
-import fs2.Task
 
 object AsyncSQS {
 
-  def sendMessageAsync(client: AmazonSQSAsyncClient, request: SendMessageRequest)(implicit s: Strategy): Task[SendMessageResult] = {
-    Task.async[SendMessageResult] { k =>
+  def sendMessageAsync[F[_]: Effect](client: AmazonSQSAsyncClient, request: SendMessageRequest): F[SendMessageResult] = {
+    asyncF[F, SendMessageResult] { k =>
       client.sendMessageAsync(request, handler[SendMessageRequest, SendMessageResult](k))
     }
   }
 
-  def sendMessageBatchAsync(client: AmazonSQSAsyncClient, request: SendMessageBatchRequest)(implicit s: Strategy): Task[SendMessageBatchResult] = {
-    Task.async[SendMessageBatchResult] { k =>
+  def sendMessageBatchAsync[F[_]: Effect](client: AmazonSQSAsyncClient, request: SendMessageBatchRequest): F[SendMessageBatchResult] = {
+    asyncF[F, SendMessageBatchResult] { k =>
       client.sendMessageBatchAsync(request, handler[SendMessageBatchRequest, SendMessageBatchResult](k))
     }
   }
 
-  def getMessagesAsync(client: AmazonSQSAsyncClient, request: ReceiveMessageRequest)(implicit s: Strategy): Task[ReceiveMessageResult] = {
-    Task.async[ReceiveMessageResult] { k =>
+  def getMessagesAsync[F[_]: Effect](client: AmazonSQSAsyncClient, request: ReceiveMessageRequest): F[ReceiveMessageResult] = {
+    asyncF[F, ReceiveMessageResult] { k =>
       client.receiveMessageAsync(request, handler[ReceiveMessageRequest, ReceiveMessageResult](k))
     }
   }
 
-  def deleteMessageAsync(client: AmazonSQSAsyncClient, request: DeleteMessageRequest)(implicit s: Strategy): Task[DeleteMessageResult] = {
-    Task.async[DeleteMessageResult] { k =>
+  def deleteMessageAsync[F[_]: Effect](client: AmazonSQSAsyncClient, request: DeleteMessageRequest): F[DeleteMessageResult] = {
+    asyncF[F, DeleteMessageResult] { k =>
       client.deleteMessageAsync(request, handler[DeleteMessageRequest, DeleteMessageResult](k))
     }
   }
 
-  def deleteMessageBatchAsync(client: AmazonSQSAsyncClient, request: DeleteMessageBatchRequest)(implicit s: Strategy): Task[DeleteMessageBatchResult] = {
-    Task.async[DeleteMessageBatchResult] { k =>
+  def deleteMessageBatchAsync[F[_]: Effect](client: AmazonSQSAsyncClient, request: DeleteMessageBatchRequest): F[DeleteMessageBatchResult] = {
+    asyncF[F, DeleteMessageBatchResult] { k =>
       client.deleteMessageBatchAsync(request, handler[DeleteMessageBatchRequest, DeleteMessageBatchResult](k))
     }
   }
 
-  def changeMessageVisibilityAsync(client: AmazonSQSAsyncClient, request: ChangeMessageVisibilityRequest)(implicit s: Strategy): Task[ChangeMessageVisibilityResult] = {
-    Task.async[ChangeMessageVisibilityResult] { k =>
+  def changeMessageVisibilityAsync[F[_]: Effect](client: AmazonSQSAsyncClient, request: ChangeMessageVisibilityRequest): F[ChangeMessageVisibilityResult] = {
+    asyncF[F, ChangeMessageVisibilityResult] { k =>
       client.changeMessageVisibilityAsync(request, handler[ChangeMessageVisibilityRequest, ChangeMessageVisibilityResult](k))
     }
   }
 
-  def changeMessageVisibilityBatchAsync(client: AmazonSQSAsyncClient, request: ChangeMessageVisibilityBatchRequest)(implicit s: Strategy): Task[ChangeMessageVisibilityBatchResult] = {
-    Task.async[ChangeMessageVisibilityBatchResult] { k =>
+  def changeMessageVisibilityBatchAsync[F[_]: Effect](client: AmazonSQSAsyncClient, request: ChangeMessageVisibilityBatchRequest): F[ChangeMessageVisibilityBatchResult] = {
+    asyncF[F, ChangeMessageVisibilityBatchResult] { k =>
       client.changeMessageVisibilityBatchAsync(request, handler[ChangeMessageVisibilityBatchRequest, ChangeMessageVisibilityBatchResult](k))
     }
+  }
+
+  def asyncF[F[_], A](k: (Either[Throwable, A] => Unit) => Unit)(implicit f: Effect[F]): F[A] = {
+    f.async(k)
   }
 
   private def handler[E <: AmazonWebServiceRequest, A](k: (Either[Throwable, A]) => Unit) = new AsyncHandler[E, A] {
@@ -58,3 +61,5 @@ object AsyncSQS {
   }
 
 }
+
+
