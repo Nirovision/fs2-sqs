@@ -19,24 +19,24 @@ case class FS2ChangeMsgVisibilityRequest(req: ChangeMessageVisibilityRequest) ex
 
 object FS2SQS {
 
-  def publishPipe[F[_]: Effect](client: AmazonSQSAsyncClient)(implicit ec: ExecutionContext): Pipe[F, SendMessageRequest, SendMessageResult] = { requests =>
+  def publishPipe[F[_]: Effect](client: AmazonSQSAsyncClient): Pipe[F, SendMessageRequest, SendMessageResult] = { requests =>
     requests.evalMap { request =>
       AsyncSQS.sendMessageAsync(client, request)
     }
   }
 
-  def publishBatchPipe[F[_]: Effect](client: AmazonSQSAsyncClient)(implicit ec: ExecutionContext): Pipe[F, SendMessageBatchRequest, SendMessageBatchResult] = { requests =>
+  def publishBatchPipe[F[_]: Effect](client: AmazonSQSAsyncClient): Pipe[F, SendMessageBatchRequest, SendMessageBatchResult] = { requests =>
     requests.evalMap { request =>
       AsyncSQS.sendMessageBatchAsync(client, request)
     }
   }
 
-  def messageStream[F[_]: Effect](client: AmazonSQSAsyncClient, request: ReceiveMessageRequest)(implicit ec: ExecutionContext): Stream[F, Message] = {
+  def messageStream[F[_]: Effect](client: AmazonSQSAsyncClient, request: ReceiveMessageRequest): Stream[F, Message] = {
     Stream.repeatEval(AsyncSQS.getMessagesAsync(client, request))
       .flatMap(result => Stream.emits(result.getMessages.asScala))
   }
 
-  def ackSink[F[_]: Effect](client: AmazonSQSAsyncClient)(implicit ec: ExecutionContext): Sink[F, (Message, (Message => FS2SQSRequest))] = { mes =>
+  def ackSink[F[_]: Effect](client: AmazonSQSAsyncClient): Sink[F, (Message, (Message => FS2SQSRequest))] = { mes =>
     mes.map {
       case (message, action) => action(message)
     }.evalMap {
