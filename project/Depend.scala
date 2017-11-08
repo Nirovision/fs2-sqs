@@ -2,7 +2,7 @@ import sbt._
 
 object Depend {
   lazy val fs2 = Seq(
-    "co.fs2" %% "fs2-core" % "0.10.0-M7"
+    "co.fs2" %% "fs2-core" % "0.10.0-M6"
   )
 
   lazy val awsSqs = Seq(
