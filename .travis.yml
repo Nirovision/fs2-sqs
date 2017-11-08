@@ -8,8 +8,11 @@ env:
 
 deploy:
   provider: script
+  skip_cleanup: true
   script: project/publish.sh
+  env:
   on:
     tags: true
 
-script: sbt compile
+script:
+  - sbt -Dbintray.user=$BINTRAY_USER -Dbintray.pass=$BINTRAY_PASSWORD +compile
