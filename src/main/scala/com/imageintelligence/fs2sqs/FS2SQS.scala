@@ -54,7 +54,7 @@ object FS2SQS {
     val deleteBatch = actions.collect {
       case FS2DeleteMsgRequest(d) => d
     }.segmentN(maxBatchSize, allowFewer = true)
-      .map(x => x.toList)
+      .map(x => x.force.toList)
       .flatMap { items =>
         val requests = items
           .groupBy(x => x.getQueueUrl)
@@ -70,7 +70,7 @@ object FS2SQS {
     val sendsBatch = actions.collect {
       case FS2SendMsgRequest(d) => d
     }.segmentN(maxBatchSize, allowFewer = true)
-      .map(x => x.toList)
+      .map(x => x.force.toList)
       .flatMap { items =>
         val requests = items
           .groupBy(x => x.getQueueUrl)
@@ -86,7 +86,7 @@ object FS2SQS {
     val changeVisibilityBatch = actions.collect {
       case FS2ChangeMsgVisibilityRequest(d) => d
     }.segmentN(maxBatchSize, allowFewer = true)
-      .map(x => x.toList)
+      .map(x => x.force.toList)
       .flatMap { items =>
         val requests = items
           .groupBy(x => x.getQueueUrl)

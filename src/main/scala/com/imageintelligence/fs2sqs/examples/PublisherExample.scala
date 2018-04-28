@@ -38,7 +38,7 @@ object PublisherExample {
     val effect = messageRequestsStream
       .through(publishPipe)
       .to(loggingSink)
-      .onError(e => Stream.emit(println("Error: " + e.getMessage)))
+      .handleErrorWith(e => Stream.emit(println("Error: " + e.getMessage)))
 
     // Lift our effect into a Task, and run it.
     effect.run.unsafeRunSync()
